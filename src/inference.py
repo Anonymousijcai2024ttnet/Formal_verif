@@ -112,7 +112,22 @@ class BN_eval_MNIST(nn.Module):
         #print(self.scale.shape, x.shape, self.bias.shape)
         return self.scale.to(device) * x + self.bias.to(device)
 
+import json
+import itertools
+def extract(output_strings):
+    template = '{{"values": [{}]}}'
+    parse_func = lambda x: json.loads(template.format(x))
+    return list(itertools.chain(*[parse_func(x)["values"] for x in output_strings]))
+def BitsToIntAFast(bits):
+    m,n = bits.shape # number of columns is needed, not bits.size
+    a = 2**np.arange(n)[::-1]  # -1 reverses array of powers of 2 of same length as bits
+    return bits @ a  # this matmult is the key line of code
 
+def TerToIntAFast(bits):
+    m,n = bits.shape # number of columns is needed, not bits.size
+    #print(m,n)
+    a = 3**np.arange(n)[::-1]  # -1 reverses array of powers of 2 of same length as bits
+    return bits @ a  # this matmult is the key line of code
 
 class BN_eval_CNN(nn.Module):
     '''Depthwise conv + Pointwise conv'''

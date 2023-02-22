@@ -1,4 +1,5 @@
-from src.inference import complete_solving_accelerate_v3, BN_eval_MNIST, BN_eval_CIFAR10, load_cnf_dnf_block
+from src.inference import complete_solving_accelerate_v3, BN_eval_MNIST, BN_eval_CIFAR10, load_cnf_dnf_block, \
+    TerToIntAFast, extract
 import os
 from copy import copy, deepcopy
 import time
@@ -148,7 +149,7 @@ liste_fonctions_N.append(InputQuantizer(args.quant_step))
 
 scale = np.loadtxt(args.path_load_model+"/preprocessing_BN_scale.txt")
 bias = np.loadtxt(args.path_load_model+"/preprocessing_BN_bias.txt")
-print(scale.shape, bias.shape)
+
 if config_general.dataset == "MNIST":
     liste_fonctions.append(BN_eval_MNIST(np.array([scale]), np.array([bias])).to(device))
 else:
@@ -165,11 +166,9 @@ if os.path.isfile(args.path_load_model+"/preprocessing_BN_scale_2.txt"):
 
 
 #ok
-#count, putawayliteral = load_cnf_dnf_block_count(args)
+
 putawayliteral = []
-print(putawayliteral)
-#putawayliteral = [(0, 2, 5), (0, 4, 5), (0, 4, 8), (0, 6, 0), (0, 6, 5), (0, 6, 8), (0, 7, 0), (0, 7, 1), (0, 7, 5), (0, 7, 6), (0, 7, 7), (0, 9, 1), (0, 9, 2), (0, 9, 5), (0, 9, 6), (0, 9, 8), (0, 10, 0), (0, 10, 1), (0, 10, 2), (0, 10, 3), (0, 12, 2), (0, 12, 5), (0, 12, 7), (0, 13, 0), (0, 13, 1), (0, 13, 3), (0, 13, 8), (0, 14, 7), (0, 16, 7), (0, 18, 7), (0, 19, 1), (0, 19, 2), (0, 19, 3), (0, 19, 8), (0, 22, 0), (0, 22, 2), (0, 22, 6) , (0, 22, 7), (0, 22, 8), (0, 24, 5), (0, 25, 3), (0, 25, 4), (0, 25, 5), (0, 25, 6), (0, 25, 7), (0, 25, 8), (0, 26, 1), (0, 26, 5), (0, 26, 6), (0, 26, 8), (0, 27, 0), (0, 27, 5), (0, 27, 6), (0, 27, 8), (0, 30, 1), (0, 30, 8), (0, 31, 0), (0, 31, 1), (0, 31, 2), (0, 31, 3), (0, 31, 4), (0, 31, 5), (0, 31, 6), (0, 31, 7), (0, 31, 8), (0, 32, 0), (0, 32, 1), (0, 32, 2), (0, 32, 3), (0, 32, 4), (0, 32, 6), (0, 32, 7), (0, 32, 8), (0, 33, 2), (0, 33, 8), (0, 34, 7), (0, 35, 0), (0, 35, 1), (0, 35, 2), (0, 35, 6), (0, 35, 7), (0, 36, 2), (0, 36, 3), (0, 36, 5), (0, 36, 6), (0, 39, 0), (0, 39, 6), (0, 39, 7), (0, 39, 8), (0, 40, 3), (0, 40, 5), (0, 43, 0), (0, 43, 1), (0, 43, 2), (0, 43, 3), (0, 43, 4), (0, 43, 5), (0, 44, 7), (0, 45, 1), (0, 45, 2), (0, 45, 4), (0, 45, 7), (1, 0, 1), (1, 0, 2), (1, 1, 2), (1, 1, 6), (1, 1, 8), (1, 2, 7), (1, 2, 8), (1, 3, 0), (1, 3, 1), (1, 3, 2), (1, 3, 6), (1, 3, 8), (1, 5, 4), (1, 5, 6), (1, 5, 8), (1, 7, 5), (1, 8, 2), (1, 8, 7), (1, 8, 8), (1, 11, 0), (1, 11, 3), (1, 11, 7), (1, 15, 1), (1, 15, 2), (1, 15, 5), (1, 15, 6), (1, 15, 7), (1, 15, 8), (1, 22, 5), (1, 22, 6), (1, 22, 7), (1, 22, 8), (1, 24, 6), (1, 28, 6), (1, 29, 0), (1, 29, 8), (1, 37, 0), (1, 37, 1), (1, 37, 2), (1, 37, 3), (1, 37, 4), (1, 37, 6), (1, 37, 7), (1, 37, 8), (1, 38, 6), (1, 38, 8), (1, 39, 1), (1, 39, 6), (1, 40, 2), (1, 40, 5), (1, 40, 8), (1, 41, 8)]
-#putawayliteral = [(0, 2, 3), (0, 2, 5), (0, 3, 0), (0, 3, 1), (0, 3, 5), (0, 3, 8), (0, 4, 5), (0, 4, 8), (0, 6, 3), (0, 6, 5), (0, 7, 0), (0, 7, 2), (0, 7, 4), (0, 8, 0), (0, 8, 5), (0, 8, 7), (0, 8, 8), (0, 9, 1), (0, 9, 3), (0, 10, 3), (0, 10, 6), (0, 11, 3), (0, 12, 3), (0, 12, 4), (0, 13, 4), (0, 13, 6), (0, 14, 3), (0, 14, 7), (0, 15, 7), (0, 16, 7), (0, 17, 1), (0, 18, 7), (0, 19, 1), (0, 19, 4), (0, 20, 1), (0, 20, 5), (0, 21, 3), (0, 22, 2), (0, 22, 7), (0, 22, 8), (0, 23, 1), (0, 24, 4), (0, 24, 5), (0, 25, 2), (0, 25, 6), (0, 26, 4), (0, 26, 8), (0, 27, 3), (0, 28, 1), (0, 28, 3), (0, 28, 4), (0, 29, 5), (0, 29, 8), (0, 30, 8), (0, 31, 1), (0, 31, 2), (0, 31, 8), (0, 33, 1), (0, 33, 2), (0, 34, 1), (0, 34, 7), (0, 34, 8), (0, 35, 0), (0, 36, 3), (0, 36, 4), (0, 36, 6), (0, 37, 3), (0, 37, 5), (0, 38, 5), (0, 39, 0), (0, 39, 1), (0, 39, 4), (0, 40, 0), (0, 40, 2), (0, 40, 3), (0, 41, 5), (0, 41, 6), (0, 41, 7), (0, 42, 4), (0, 43, 0), (0, 43, 1), (0, 43, 2), (0, 43, 3), (0, 43, 4), (0, 44, 1), (0, 44, 2), (0, 44, 4), (0, 44, 5), (0, 45, 1), (0, 45, 4), (0, 45, 7), (0, 46, 5), (0, 46, 6), (0, 46, 7), (0, 47, 4), (0, 47, 5), (0, 47, 7), (1, 0, 1), (1, 0, 2), (1, 0, 3), (1, 1, 7), (1, 2, 0), (1, 2, 4), (1, 2, 8), (1, 3, 0), (1, 3, 2), (1, 3, 6), (1, 3, 8), (1, 4, 3), (1, 4, 7), (1, 5, 5), (1, 5, 8), (1, 6, 0), (1, 6, 8), (1, 7, 0), (1, 7, 4), (1, 8, 3), (1, 8, 5), (1, 9, 2), (1, 9, 6), (1, 10, 0), (1, 10, 4), (1, 10, 6), (1, 11, 0), (1, 11, 3), (1, 11, 7), (1, 11, 8), (1, 12, 3), (1, 12, 8), (1, 15, 2), (1, 15, 6), (1, 16, 8), (1, 18, 0), (1, 18, 1), (1, 18, 5), (1, 18, 6), (1, 19, 0), (1, 19, 2), (1, 19, 4), (1, 20, 2), (1, 21, 2), (1, 21, 5), (1, 21, 8), (1, 22, 5), (1, 22, 7), (1, 22, 8), (1, 23, 0), (1, 23, 1), (1, 24, 1), (1, 25, 1), (1, 25, 2), (1, 25, 3), (1, 25, 8), (1, 26, 3), (1, 26, 8), (1, 27, 1), (1, 28, 5), (1, 28, 6), (1, 28, 7), (1, 29, 1), (1, 29, 4), (1, 29, 6), (1, 30, 3), (1, 30, 5), (1, 31, 4), (1, 31, 8), (1, 32, 3), (1, 32, 6), (1, 33, 1), (1, 34, 0), (1, 34, 1), (1, 34, 4), (1, 35, 6), (1, 36, 0), (1, 36, 1), (1, 37, 0), (1, 37, 4), (1, 37, 7), (1, 38, 0), (1, 38, 6), (1, 39, 6), (1, 39, 7), (1, 39, 8), (1, 40, 0), (1, 40, 5), (1, 40, 6), (1, 41, 8), (1, 42, 1), (1, 42, 2), (1, 42, 4), (1, 42, 5), (1, 42, 7), (1, 44, 6), (1, 44, 7), (1, 45, 1), (1, 45, 5), (1, 46, 0), (1, 46, 4), (1, 47, 8)]
+
 
 act = Binarize01Act
 liste_fonctions.append(act(T=args.thr_bin_act_test[0]))
@@ -177,7 +176,7 @@ preprocessing = nn.Sequential(*liste_fonctions).eval()
 preprocessing_withoutact = nn.Sequential(*liste_fonctions2).eval()
 preprocessing_withoutact_P = nn.Sequential(*liste_fonctions_P).eval()
 preprocessing_withoutact_N = nn.Sequential(*liste_fonctions_N).eval()
-print(preprocessing)
+
 
 # Last layer
 Wbin_scale = 1.0 * (np.loadtxt(args.path_load_model + "/Wbin_scale.txt").astype("f"))
@@ -391,35 +390,16 @@ for filter_occurencefunction in tqdm(range(args.Blocks_filters_output[1])):
 df1 = np.array(df1)
 print(df1.shape)
 print("END load csv")
-#
-# #print(df[807058])
-# #print(df[807059])
-
-import json
-import itertools
-def extract(output_strings):
-    template = '{{"values": [{}]}}'
-    parse_func = lambda x: json.loads(template.format(x))
-    return list(itertools.chain(*[parse_func(x)["values"] for x in output_strings]))
 
 
-# dask_df_0 = dd.read_csv(path_save_modelvf + "/TTnet_allposible_block0.csv")
+
 tottime = 0
 running_corrects = 0.0
 nbre_sample = 0
 timeout = 0
 tk0 = tqdm(dataloaders["val"], total=int(len(dataloaders["val"])))
 
-def BitsToIntAFast(bits):
-    m,n = bits.shape # number of columns is needed, not bits.size
-    a = 2**np.arange(n)[::-1]  # -1 reverses array of powers of 2 of same length as bits
-    return bits @ a  # this matmult is the key line of code
 
-def TerToIntAFast(bits):
-    m,n = bits.shape # number of columns is needed, not bits.size
-    #print(m,n)
-    a = 3**np.arange(n)[::-1]  # -1 reverses array of powers of 2 of same length as bits
-    return bits @ a  # this matmult is the key line of code
 
 
 correct_sur = 0
@@ -434,8 +414,6 @@ with torch.no_grad():
                 args.coef_multiplicateur_data) * int(args.offset):
             nSize = args.kernel_size_per_block[0] ** 2 * args.groups_per_block[0]
             inputs, labels = data
-            #start = time.time()
-
             predicted, res_all_tensorinput_block, res_all_tensoroutput_block, \
             shape_all_tensorinput_block, shape_all_tensoroutput_block, res_all_tensorinput_block_unfold = infer_normal_withPYTHON(inputs, preprocessing,
                                                                                                 device, unfold_all, args,
@@ -467,7 +445,6 @@ with torch.no_grad():
             cnf_general_pre = [[] for i in range(batch_size_test)]
             nbre_sample += inputs.shape[0]
             start2 = time.time()
-            print(correct)
             imagesPLUS = imagev2.clone() + float(args.attack_eps)
             imagesMOINS = imagev2.clone() - float(args.attack_eps)
             outp = preprocessing(imagesPLUS).to(device).detach().cpu().clone()
@@ -489,7 +466,7 @@ with torch.no_grad():
                     imgs_debut = copy(input_acomplter_v2)
                 else:
                     imgs_debut = copy(
-                        res_all_tensorinput_block[block_occurence])  # [(predicted == labelref.to(device)), :, :, :])
+                        res_all_tensorinput_block[block_occurence])
                 imgs_fin = res_all_tensoroutput_block[block_occurence][(predicted.cpu() == labels.cpu()), :, :, :]
                 shapeici_out = imgs_fin.shape[-1] ** 2
                 shapeici_out2 = imgs_fin.shape[-1]
@@ -513,11 +490,6 @@ with torch.no_grad():
                         input_vu_par_cnn_et_sat_starting_newArray[input_vu_par_cnn_et_sat_starting == -1] = 2
                         input_vu_par_cnn_et_sat = input_vu_par_cnn_et_sat_starting_newArray.transpose(1, 0, 2).reshape(
                             nSize, -1)
-                        #for filter_occurenceb0 in range(args.Blocks_filters_output[0]):
-                        #    for kkb0 in range(9):
-                        #        if (block_occurence, filter_occurenceb0, kkb0) in putawayliteral:
-                        #            input_vu_par_cnn_et_sat[kkb0, :] = 0
-                        #            print(np.sum(input_vu_par_cnn_et_sat)==2)
                         input_vu_par_cnn_et_sat_T = input_vu_par_cnn_et_sat.transpose()
                         input_vu_par_cnn_et_sat_T_int = TerToIntAFast(input_vu_par_cnn_et_sat_T)
                         for input_vu_par_cnn_et_sat_T_int_i, input_vu_par_cnn_et_sat_T_int_v in enumerate(
@@ -627,6 +599,7 @@ with torch.no_grad():
                     startlocal = time.time()
                     print("Block occurence, mean noise", block_occurence, torch.sum(imgs_fin == 2) / batch_size_test)
                     print("from start verify 3", time.time() - start2)
+                    print(" BLOCK 0 TIME GENERATION SAT EQUATION ", time.time() - start2)
 
                 elif block_occurence == 1:
                     img_fin_unknown = []
@@ -685,20 +658,9 @@ with torch.no_grad():
                     imgs_fin = imgs_fin + img_fin_unknown
                     imgs_fin[imgs_fin > 1] = 2
                     print("Block occurence, mean noise", block_occurence, np.sum(imgs_fin == 2) / batch_size_test)
-                    #print(cnf_general[0])
-                    #print("from start", time.time() - start)
-                    print("from start verify 3", time.time() - start2)
+                    print(" TOTAL TIME GENERATION SAT EQUATION ", time.time() - start2)
                     cnf_general2 = [extract(cnf) for cnf in cnf_general]
-                    #print("from start", time.time() - start)
-                    print("from start verify 3", time.time() - start2)
-                    #[all_solvers[index_cnf][j].append_formula(cnf) for j in range(nSize) for index_cnf, cnf in enumerate(cnf_general2)]
-                    #print(all_solvers[0])
-                    #print(all_solvers[0][0].nof_clauses())
-                    #print(len(cnf_general2[0]))
-                    #print("from start", time.time() - start)
-                    #print("from start verify 3", time.time() - start2)
-                    #print("Block occurence, mean noise", block_occurence, np.sum(imgs_fin == 2) / batch_size_test)
-                    #print("Block occurence, mean noise", block_occurence, np.sum(imgs_fin == 2) / (batch_size_test * args.Blocks_filters_output[block_occurence] * H_b1 * H_b1))
+
                     features_replace = imgs_fin.reshape(batch_size_test, -1).astype('i')
                     KNOWN_all = (features_replace < 2)
                     UNKNOWN_all = (features_replace == 2)
@@ -707,70 +669,6 @@ with torch.no_grad():
                     timesatsolve_all = []
                     time_to_remove_all = 0
                     time_to_solve_all = 0
-                    #imgs_fin_offset = deepcopy(imgs_fin)
-                    #imgs_fin_offset[imgs_fin == 2] = 0
-                    #features_replace_offset = imgs_fin_offset.reshape(batch_size_test, -1).astype(
-                    #    'i').transpose()
-                    #offset_F = np.dot(W_LR, features_replace_offset).transpose()
-                    #print(offset_F.shape)
-
-                    # print("START ASSERT 1")
-                    # for batchici in tqdm(range(features_replace.shape[0])):
-                    #     cnf_local = []
-                    #     for index_x, x in enumerate(features_replace[batchici, :]):
-                    #         if x == 1:
-                    #             cnf_local.append([litsici2[index_x]])
-                    #         else:
-                    #             cnf_local.append([int(-1 * litsici2[index_x])])
-                    #     labelref_vf = None
-                    #     for labelref in range(W_LR.shape[0]):
-                    #         if CNFcondf[labelref] is not None:
-                    #             cnf = CNFcondf[labelref] + cnf_local
-                    #             with Solver(bootstrap_with=cnf) as solver:
-                    #                 if solver.solve():
-                    #                     labelref_vf = labelref
-                    #                     #break
-                    #                     assert labelref_vf == labelrefv2[batchici] #$or V_ref[0][labelref] == V_ref[0][predicted[0]]
-                    #                     break
-                    #             del cnf
-                    #     del cnf_local
-
-
-
-
-                    # for batchici in tqdm(range(batch_size_test)):
-                    #     UNKNOWN1 = UNKNOWN_all[batchici]
-                    #     KNOWN_all_0_ici = KNOWN_all_0[batchici]
-                    #     KNOWN_all_1_ici = KNOWN_all_1[batchici]
-                    #     cnf_G = cnf_general2[batchici] #+ cnf_general_pre[batchici]
-                    #     cnf_pre = cnf_general_pre[batchici]
-                    #     cnf_local = []
-                    #
-                    #     offset = features1_ref[0]
-                    #     if np.sum(UNKNOWN1) != 0:
-                    #         for k0ici_index, k0ici in enumerate(KNOWN_all_0_ici):
-                    #             if k0ici:
-                    #                 cnf_local.append([int(-1*features1_ref[k0ici_index])])
-                    #                 #assert True not in [features1_ref[k0ici_index] in x for x in cnf_G]
-                    #                 #assert True not in [int(-1*features1_ref[k0ici_index]) in x for x in cnf_G]
-                    #             elif KNOWN_all_1_ici[k0ici_index]:
-                    #                 cnf_local.append([int(1*features1_ref[k0ici_index])])
-                    #                 #assert True not in [features1_ref[k0ici_index] in x for x in cnf_G]
-                    #                 #assert True not in [int(-1 * features1_ref[k0ici_index]) in x for x in cnf_G]
-                    #             #else:
-                    #                 #assert UNKNOWN1[k0ici_index] == True
-                    #         L0 = np.expand_dims(-1 * (np.where(features_replace[batchici] == 0)[0] + offset),
-                    #                        axis=1).tolist()
-                    #         L1 = np.expand_dims(
-                    #             1 * (np.where(features_replace[batchici] == 1)[0] + offset), axis=1).tolist()
-                    #         #print(L0 + L1)
-                    #         #print(cnf_local)
-                    #         #ok
-
-                    #print("from start verify 3", time.time() - start2)
-                    #ok
-
-
 
 
                     cnf_local_all = {}
@@ -778,7 +676,8 @@ with torch.no_grad():
                     for batchici in tqdm(range(batch_size_test)):
                         cnf_local_all[batchici] = np.expand_dims(-1 * (np.where(features_replace[batchici] == 0)[0] + offset), axis=1).tolist()
                         cnf_local_all[batchici] += np.expand_dims(1 * (np.where(features_replace[batchici] == 1)[0] + offset), axis=1).tolist()
-                    print("from start verify 3", time.time() - start2)
+                    print(" TOTAL TIME GENERATION SAT EQUATION IN CORRECT FORMAT ", time.time() - start2)
+                    saveTime= time.time() - start2
                     #ok
 
                     for batchici in tqdm(range(batch_size_test)):
@@ -790,81 +689,19 @@ with torch.no_grad():
                             flag2, time_to_remove, time_to_solve, attack, new_lab = complete_solving_accelerate_v3(
                                                                         dico_clause[labelrefv2[batchici]], labelrefv2[batchici],
                                                                         all_solvers[batchici], cnf_G + cnf_local, cnf_pre, path_save_modelvf_str=path_save_modelvf+"cnf/"+str(args.attack_eps)+"_Batch_correct_"+str(batchtot[batchici])+"_")
-                            #del cnf_G, cnf_local, cnf_pre
                             time_to_remove_all+=time_to_remove
                             time_to_solve_all += time_to_solve
-                            #print(ok)
-                            if flag2:
-                                start_assert = time.time()
-                                all_CNFG[labelrefv2[batchici]][new_lab] += cnf_G
-                                #print(cnf_G)
-                                #print()
-                                #print(attack)
-                                #print()
-                                #print([x for x in cnf_G if (804 in x or -804 in x)])
-                                #print()
-                                inputs_attack = imagev2.clone()
-                                correct -= 1
-                                cpt_attack = 0
-                                for c in range(1):
-                                    for i in range(28):
-                                        for j in range(28):
-                                            cpt_attack+=1
-                                            if cpt_attack in attack: #and inputs_attack[batchici, c, i, j]==-1:
-                                                inputs_attack[batchici, c, i, j]  = inputs_attack[batchici, c, i, j] + args.attack_eps
-                                            elif int(-1*cpt_attack): # in attack and inputs_attack[batchici, c, i, j]==-1:
-                                                inputs_attack[batchici, c, i, j] = inputs_attack[batchici, c, i, j] - args.attack_eps
 
-                                            #if cpt_attack == 123:
-                                            #    print(imagev2[batchici])
-                                            #    print(inputs_attack[batchici])
-
-
-
-                                predicted_attack, res_all_tensorinput_block_attack, res_all_tensoroutput_block_attack, _, _,\
-                                        res_all_tensorinput_block_unfold_attack = infer_normal_withPYTHON(inputs_attack[batchici].unsqueeze(0),
-                                                               preprocessing,
-                                                               device, unfold_all, args,
-                                                               mapping_filter, Wbin_scale, b_LR,
-                                                               array_block_0,
-                                                               array_block_1, items, putawayliteral)
-
-                                predicted_ref, res_all_tensorinput_block_ref, res_all_tensoroutput_block_ref, _, _,\
-                                        res_all_tensorinput_block_unfold_ref = infer_normal_withPYTHON(imagev2[batchici].unsqueeze(0),
-                                                               preprocessing,
-                                                               device, unfold_all, args,
-                                                               mapping_filter, Wbin_scale, b_LR,
-                                                               array_block_0,
-                                                               array_block_1, items, putawayliteral)
-
-                                #print(predicted_attack[0],  labelrefv2[batchici], new_lab, predicted_ref[0])
-                                if predicted_attack[0] != labelrefv2[batchici]:
-                                    correct_sur -= 1
-                                        #TODOO : save les images avec et sans attaque apres la premiere couche
-                                else:
-                                    print("correct", correct)
-                                    print("correct_sur", correct_sur)
-
-                                    features_replace_attack = res_all_tensoroutput_block_attack[1].reshape(1,
-                                                                                                           -1).astype(
-                                        'i').transpose()
-                                    features_replace_ref = res_all_tensoroutput_block_ref[1].reshape(1, -1).astype(
-                                        'i').transpose()
-                                    V_ref_aattack = np.dot(Wbin_scale, features_replace_attack).transpose() + b_LR
-                                    V_ref_ref = np.dot(Wbin_scale, features_replace_ref).transpose() + b_LR
-
-                                time_to_remove_all += time.time() - start_assert
 
                     print("natural correct", correct)
                     print("verifed correct", correct)
-                    print("verifed correct with verification", correct_sur)
-                    print("from start", time.time() - start2)
-                    print("TIME TO GENERATE Verify ", time.time() - start2-time_to_remove_all)
+                    print("TIME TO GENERATE Verify ", saveTime)
                     print("TIME TO SOLVE Verify ", time_to_solve_all)
                     # print(all_CNFG)
 
                     print(" DONE ")
                     #print(ok)
+                    kill
 
 
 
