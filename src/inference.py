@@ -1,34 +1,16 @@
-import os
-from copy import deepcopy
+from copy import copy, deepcopy
 from ctypes import c_uint8, c_uint64
+import pandas as pd
 import torch
 import torch.nn as nn
+from torch.autograd import Function
 from sympy import symbols
 from sympy.logic.boolalg import truth_table
 from sympy.parsing.sympy_parser import parse_expr
-from torch.autograd import Function
 from torchvision.datasets.mnist import read_image_file, read_label_file
 from tqdm import tqdm
-import json
-import itertools
+import os
 
-def BitsToIntAFast(bits):
-    m, n = bits.shape  # number of columns is needed, not bits.size
-    a = 2 ** np.arange(n)[::-1]  # -1 reverses array of powers of 2 of same length as bits
-    return bits @ a  # this matmult is the key line of code
-
-
-def TerToIntAFast(bits):
-    m, n = bits.shape  # number of columns is needed, not bits.size
-    # print(m,n)
-    a = 3 ** np.arange(n)[::-1]  # -1 reverses array of powers of 2 of same length as bits
-    return bits @ a  # this matmult is the key line of code
-
-
-def extract(output_strings):
-    template = '{{"values": [{}]}}'
-    parse_func = lambda x: json.loads(template.format(x))
-    return list(itertools.chain(*[parse_func(x)["values"] for x in output_strings]))
 
 def get_mapping_filter(args):
     mapping_filter = {}
@@ -39,10 +21,10 @@ def get_mapping_filter(args):
             inter_filter_coef = int(args.Blocks_filters_output[block] / input_dim)
         else:
             inter_filter_coef = int(args.Blocks_filters_output[block] * args.groups_per_block[block] / (
-                args.Blocks_filters_output[block - 1]))
+            args.Blocks_filters_output[block - 1]))
         for filterblockici_out in range(args.Blocks_filters_output[block]):
             mapping_filter[block][filterblockici_out] = args.groups_per_block[block] * (
-                    filterblockici_out // inter_filter_coef)
+                        filterblockici_out // inter_filter_coef)
     return mapping_filter, input_dim
 
 
@@ -55,15 +37,15 @@ def get_mapping_filter_cnn(args):
             inter_filter_coef = int(args.Blocks_filters_output[block] / input_dim)
         else:
             inter_filter_coef = int(args.Blocks_filters_output[block] * args.groups_per_block[block] / (
-                args.Blocks_filters_output[block - 1]))
+            args.Blocks_filters_output[block - 1]))
         for filterblockici_out in range(args.Blocks_filters_output[block]):
             if block == 0:
                 # mapping_filter[block][filterblockici_out] = args.groups_per_block[block]*int(args.groups_per_block[block]*(filterblockici_out // inter_filter_coef)//4)
                 mapping_filter[block][filterblockici_out] = args.groups_per_block[block] * (
-                        filterblockici_out // inter_filter_coef)
+                            filterblockici_out // inter_filter_coef)
             else:
                 mapping_filter[block][filterblockici_out] = args.groups_per_block[block] * (
-                        filterblockici_out // inter_filter_coef)
+                            filterblockici_out // inter_filter_coef)
     return mapping_filter, input_dim
 
 
@@ -91,11 +73,32 @@ def get_mapping_filter_cnn_multihead(args):
     return mapping_filter1, mapping_filter2
 
 
-class BN_eval(nn.Module):
+class BN_eval_CIFAR10(nn.Module):
     '''Depthwise conv + Pointwise conv'''
 
     def __init__(self, scale, bias):
-        super(BN_eval, self).__init__()
+        super(BN_eval_CIFAR10, self).__init__()
+        #print(scale.shape, bias.shape)
+        self.scale = torch.Tensor(scale).unsqueeze(2).unsqueeze(3)#.unsqueeze(3)
+        # print(torch.Tensor(scale).shape)
+        self.bias = torch.Tensor(bias).unsqueeze(2).unsqueeze(2)#.unsqueeze(3)
+
+    def forward(self, x):
+        device = x.device
+        # if x.shape[1]==3 and x.shape[-1]==32:
+        #    x = torch.cat((x - 2 / 255, x, x + 2 / 255), dim=1)
+        # elif x.shape[1]==1 and x.shape[-1]==28:
+        # k    x = torch.cat((x - 0.1, x, x + 0.1), dim=1)
+        #print(self.scale.shape, x.shape, self.bias.shape)
+        return self.scale.to(device) * x + self.bias.to(device)
+
+
+class BN_eval_MNIST(nn.Module):
+    '''Depthwise conv + Pointwise conv'''
+
+    def __init__(self, scale, bias):
+        super(BN_eval_MNIST, self).__init__()
+        #print(scale.shape, bias.shape)
         self.scale = torch.Tensor(scale).unsqueeze(0).unsqueeze(2).unsqueeze(3)
         # print(torch.Tensor(scale).shape)
         self.bias = torch.Tensor(bias).unsqueeze(0).unsqueeze(2).unsqueeze(3)
@@ -106,8 +109,9 @@ class BN_eval(nn.Module):
         #    x = torch.cat((x - 2 / 255, x, x + 2 / 255), dim=1)
         # elif x.shape[1]==1 and x.shape[-1]==28:
         # k    x = torch.cat((x - 0.1, x, x + 0.1), dim=1)
-        # print(self.scale.shape, x.shape, self.bias.shape)
+        #print(self.scale.shape, x.shape, self.bias.shape)
         return self.scale.to(device) * x + self.bias.to(device)
+
 
 
 class BN_eval_CNN(nn.Module):
@@ -410,16 +414,16 @@ def infer_normal_withPYTHON(inputs, preprocessing, device, unfold_all, args, map
                             bit1_I=[],
                             bit1_L=[],
                             bit1_F=[]):
-    # max_value_B0_thr_flow = [170,170,167,22,171,170,161,38,159,168,160,19,32,40,161,166,156,172,31,36,166,40,162,173,26,160,35,None]+[173,177,161,154,161,158,157,39,38,171,158,32,40,17,22,157,34,161,31,40]
-    # max_value_B1_thr_flow = [21, 13, 12, 14, 7, 39, 8, 45, 38, 5, 31, 27, 35, 37, 14, 20, 35, 11, 7, 30, 36, 31, 30, 10,
+    #max_value_B0_thr_flow = [170,170,167,22,171,170,161,38,159,168,160,19,32,40,161,166,156,172,31,36,166,40,162,173,26,160,35,None]+[173,177,161,154,161,158,157,39,38,171,158,32,40,17,22,157,34,161,31,40]
+    #max_value_B1_thr_flow = [21, 13, 12, 14, 7, 39, 8, 45, 38, 5, 31, 27, 35, 37, 14, 20, 35, 11, 7, 30, 36, 31, 30, 10,
     #                         32, 39, 17, 22, 8, 10, 10, None, 39, 8, 7, 36, 15, 15, 16, 32, 10, 30, 32, 44, 47, 38, 11,
     #                         9]
 
     with torch.no_grad():
         imgs_debut = preprocessing(inputs.to(device)).to(device)
-    # for x in bit1_I:
+    #for x in bit1_I:
     #    input_value = imgs_debut[:, x[0], x[1], x[2]]
-    # input_value = imgs_debut[:, 0, 16, 17]
+    #input_value = imgs_debut[:, 0, 16, 17]
     batch_size_test = inputs.shape[0]
     res_all_tensorinput_block = {}
     res_all_tensorinput_block_unfold = {}
@@ -443,14 +447,14 @@ def infer_normal_withPYTHON(inputs, preprocessing, device, unfold_all, args, map
                 #                                    args.groups_per_block[block_occurence]))
                 input_vu_par_cnn_avant_unfold = imgs_debut[:,  # batch
                                                 mapping_filter[0][filter_occurenceb0]:
-                                                mapping_filter[0][filter_occurenceb0] + int(
-                                                    args.groups_per_block[1]),
+                                                mapping_filter[0][filter_occurenceb0]+ int(
+                                                args.groups_per_block[1]),
                                                 :,
                                                 :]
                 input_vu_par_cnn_et_sat_starting = unfold_block(input_vu_par_cnn_avant_unfold).cpu().numpy().astype("i")
                 H = int(np.sqrt(input_vu_par_cnn_et_sat_starting.shape[-1]))
                 input_vu_par_cnn_et_sat = input_vu_par_cnn_et_sat_starting.transpose(1, 0, 2).reshape(nSize, -1)
-                # for kkb0 in range(nSize):
+                #for kkb0 in range(nSize):
                 #    if (block_occurence, filter_occurenceb0, kkb0) in putawayliteral:
                 #        input_vu_par_cnn_et_sat[kkb0, :] = 0
                 res_all_tensorinput_block_unfold[block_occurence][filter_occurenceb0] = input_vu_par_cnn_et_sat
@@ -464,7 +468,7 @@ def infer_normal_withPYTHON(inputs, preprocessing, device, unfold_all, args, map
 
                 # print(output_filters_ici.shape)
                 output_var_unfold = output_filters_ici[:, inverse_indices]
-                # print(" Block 0, Filter ", filter_occurenceb0, " sum: ", np.sum(output_var_unfold==1), " sum (%) ", np.sum(output_var_unfold==1)/(imgs_debut.shape[0])
+                #print(" Block 0, Filter ", filter_occurenceb0, " sum: ", np.sum(output_var_unfold==1), " sum (%) ", np.sum(output_var_unfold==1)/(imgs_debut.shape[0])
                 #      , " sum2 (%) ", np.sum(output_var_unfold==1)/(imgs_debut.shape[0]*14*14))
                 if output_var_unfold_vf is None:
                     output_var_unfold_vf = output_var_unfold
@@ -479,6 +483,7 @@ def infer_normal_withPYTHON(inputs, preprocessing, device, unfold_all, args, map
                                              H,
                                              H).transpose(1, 0, 2, 3)).to(
                 device)
+
 
             # for FB0 in tqdm(range(0,48,4)):
             #     if max_value_B0_thr_flow[FB0]>14*14/2:
@@ -509,6 +514,8 @@ def infer_normal_withPYTHON(inputs, preprocessing, device, unfold_all, args, map
             #                                 break
             #                     else:
             #                         break
+
+
 
             res_all_tensoroutput_block[block_occurence] = deepcopy(imgs_debut)
             shape_all_tensoroutput_block[block_occurence] = [imgs_debut.shape[1:]]
@@ -541,7 +548,7 @@ def infer_normal_withPYTHON(inputs, preprocessing, device, unfold_all, args, map
                 # global H2
                 input_vu_par_cnn_et_sat = input_vu_par_cnn_et_sat_starting.transpose(1, 0, 2).reshape(nSize, -1)
 
-                # for kkb0 in range(nSize):
+                #for kkb0 in range(nSize):
                 #    if (block_occurence, filter_occurencefunction, kkb0) in putawayliteral:
                 #        input_vu_par_cnn_et_sat[kkb0, :] = 0
                 res_all_tensorinput_block_unfold[block_occurence][filter_occurencefunction] = input_vu_par_cnn_et_sat
@@ -551,9 +558,9 @@ def infer_normal_withPYTHON(inputs, preprocessing, device, unfold_all, args, map
                                                                   return_inverse=True)  # ,axis=1)
                 output_filters = array_block_1[filter_occurencefunction, input_unfold_unique0]
                 output_var_unfold = output_filters[inverse_indices]
-                # print(" Block 1, Filter ", filter_occurencefunction, " sum: ", np.sum(output_var_unfold == 1), " sum (%) ",
+                #print(" Block 1, Filter ", filter_occurencefunction, " sum: ", np.sum(output_var_unfold == 1), " sum (%) ",
                 #      np.sum(output_var_unfold == 1) / (imgs_debut.shape[0])
-                # , " sum2 (%) ", np.sum(output_var_unfold == 1) / (imgs_debut.shape[0] * 7 * 7))
+                #, " sum2 (%) ", np.sum(output_var_unfold == 1) / (imgs_debut.shape[0] * 7 * 7))
                 return output_var_unfold
 
             with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -563,6 +570,7 @@ def infer_normal_withPYTHON(inputs, preprocessing, device, unfold_all, args, map
                                                                batch_size_test,
                                                                H2,
                                                                H2).transpose(1, 0, 2, 3)
+
 
             # for FB0 in tqdm(range(0,48,4)):
             #     if max_value_B1_thr_flow[FB0]>14*14/2:
@@ -594,6 +602,10 @@ def infer_normal_withPYTHON(inputs, preprocessing, device, unfold_all, args, map
             #                     else:
             #                         break
 
+
+
+
+
             res_all_tensorinput_block[block_occurence] = deepcopy(imgs_debut)
             res_all_tensoroutput_block[block_occurence] = deepcopy(imgs_fin)
             shape_all_tensorinput_block[block_occurence] = [imgs_debut.shape[1:]]
@@ -601,9 +613,9 @@ def infer_normal_withPYTHON(inputs, preprocessing, device, unfold_all, args, map
 
     feature_vector = imgs_fin.reshape(batch_size_test, -1).astype(
         'i').transpose()
-    # bit1_F = [17, 79, 164, 184, 213, 278, 416, 571, 767, 858, 1157, 1741, 2034, 2088]
+    #bit1_F = [17, 79, 164, 184, 213, 278, 416, 571, 767, 858, 1157, 1741, 2034, 2088]
 
-    # for xposval1 in bit1_F:
+    #for xposval1 in bit1_F:
     #    feature_vector[xposval1, :] = input_value
 
     V_ref = np.dot(W_LR, feature_vector).transpose() + b_LR
@@ -1184,6 +1196,8 @@ def find_gcd(list):
     return x
 
 
+from pysat.formula import CNF
+
 from pysat.solvers import Lingeling, Glucose3, Glucose4, Minisat22, Cadical, MapleChrono, MapleCM, Maplesat, Solver, \
     Minicard, MinisatGH
 
@@ -1514,8 +1528,6 @@ class MNIST_1_7(torchvision.datasets.MNIST):
 
         return data, targets
 
-
-
 def load_cnf_dnf_block(args):
     if args.with_contradiction:
         path_save_modelvf = args.path_save_model + '/thr_' + str(args.thr_bin_act_test[1:]).replace(" ",
@@ -1531,16 +1543,15 @@ def load_cnf_dnf_block(args):
     all_dnf_b1 = []
     nogolist = []
     for block_occurence in tqdm(range(0, len(args.Blocks_filters_output))):
-        # if block_occurence == 0:
+        #if block_occurence == 0:
         resnumpy_all = np.loadtxt(path_save_modelvf + 'Array_all_block_' +
-                                  str(block_occurence) + ".txt")
+                   str(block_occurence) + ".txt")
         print(resnumpy_all.shape)
         for filteroccurence in range(args.Blocks_filters_output[block_occurence]):
-            # print(filteroccurence)
+            #print(filteroccurence)
             try:
-                dnf = pd.read_csv(path_save_modelvf + "Truth_Table_block" + str(block_occurence) + "_filter_" + str(
-                    filteroccurence) + "_coefdefault_1.0_sousblock_None.csv")
-                values3 = dnf["Filter_" + str(filteroccurence) + "_Value_1"]
+                dnf = pd.read_csv(path_save_modelvf+"Truth_Table_block"+ str(block_occurence)+"_filter_"+ str(filteroccurence)+"_coefdefault_1.0_sousblock_None.csv")
+                values3 = dnf["Filter_"+str(filteroccurence)+"_Value_1"]
                 if block_occurence == 0:
                     all_dnf_b0.append(values3)
                 else:
@@ -1548,9 +1559,11 @@ def load_cnf_dnf_block(args):
             except:
                 int_ici = resnumpy_all[0, filteroccurence]
                 if block_occurence == 0:
-                    all_dnf_b0.append([int_ici] * len(values3))
+                    all_dnf_b0.append([int_ici]*len(values3))
                 else:
-                    all_dnf_b1.append([int_ici] * len(values3))
+                    all_dnf_b1.append([int_ici]*len(values3))
                 nogolist.append((block_occurence, filteroccurence))
+
+
 
     return np.array(all_dnf_b0), np.array(all_dnf_b1), nogolist

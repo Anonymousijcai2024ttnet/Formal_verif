@@ -25,7 +25,7 @@ On the first 1000 images the performances are:
 
 |                   | Acc. Natural | Acc. Verifiable | Generation time | Solving time | Total Verification Time | Avg. Verification Time / img |
 |-------------------|:------------:|:---------------:|:---------------:|:------------:|:-----------------------:|:----------------------------:|
-| Low noise 2/255   |    53.0%     |      32.3%      |      11.0s      |     1.8s     |          12.8s          |             26ms             |
+| Low noise 2/255   |    53.8%     |      32.3%      |      16.4s      |     2.9s     |          19.3s          |             36ms             |
 
 
 ## Usage
