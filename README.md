@@ -43,7 +43,16 @@ The pretrained models and truth tables can be downloaded [here](https://drive.go
 This command is very memory comsumming, please make sure that you have at least 50GB of RAM free before starting the experiment.
 To run the SAT solver verifier for the first 1K samples.
 
-To run the inference, use the following command:
+To run the verification, you need first to generate the SAT input/outputs relations for all positions as a precomputed 
+table, use the following command:
+
+```
+python3 generation.py
+```
+
+The generation process can take 3-4 hours per model.
+
+To run the verification, use the following command:
 
 ```
 python3 main.py
