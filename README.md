@@ -39,7 +39,7 @@ pip3 install -r requirements.txt
 
 ### Running Inference
 
-The pretrained models and truth tables can be downloaded [here](XXX).
+The pretrained models and truth tables can be downloaded [here](https://drive.google.com/drive/folders/1vso485OSVgIuCHxzmOK2hLAWCNHcCluR?usp=sharing).
 This command is very memory comsumming, please make sure that you have at least 50GB of RAM free before starting the experiment.
 To run the SAT solver verifier for the first 1K samples.
 
